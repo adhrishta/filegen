@@ -7,30 +7,41 @@ def parse_size(size_str):
     if not size_str:
         raise ValueError("File size must be specified.")
 
-    size_str = str(size_str).upper().strip()  # Ensure it's a string
+    size_str = str(size_str).strip().upper()
     units = {"KB": 1024, "MB": 1024**2, "GB": 1024**3}
 
     for unit in units:
         if size_str.endswith(unit):
-            return int(size_str[:-len(unit)]) * units[unit]
+            number = float(size_str[:-len(unit)].strip())
+            return int(number * units[unit])
     
     return int(size_str)  # Assume bytes if no unit is provided
 
+def validate_inputs(num_files, file_size):
+    if num_files <= 0:
+        raise ValueError("Number of files must be greater than 0.")
+    if file_size <= 0:
+        raise ValueError("File size must be greater than 0 bytes.")
+
 def create_files(num_files, file_size, output_dir):
-    """Creates multiple files with a specified size in the given directory."""
-    
-    os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
-    
+    """Creates multiple .txt files with 'lorem ipsum' content up to specified size."""
+    os.makedirs(output_dir, exist_ok=True)
+    content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+    content_bytes = content.encode("utf-8")
+    content_len = len(content_bytes)
+
     for i in range(1, num_files + 1):
-        file_path = os.path.join(output_dir, f"file_{i}.smpl")
-        
+        file_path = os.path.join(output_dir, f"file_{i}.txt")
         with open(file_path, "wb") as f:
-            f.write(os.urandom(file_size))  # Write random data
-        
-        print(f"Created: {file_path}")
+            written = 0
+            while written + content_len <= file_size:
+                f.write(content_bytes)
+                written += content_len
+            if written < file_size:
+                f.write(content_bytes[:file_size - written])
+        print(f"Created: {file_path} ({file_size} bytes)")
 
 def print_help():
-    """Displays custom help message."""
     help_text = """
 Usage: python FileGen.py -n NUM -s SIZE -o OUTPUT
 
@@ -44,41 +55,37 @@ Examples:
   python FileGen.py -n 20 -s 1MB -o output_folder
 """
     print(help_text)
-    sys.exit(0)  # Exit after showing help
+    sys.exit(0)
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate multiple files of a given size.", add_help=False)
-    parser.add_argument("-n", "--num", type=int, help="Number of files to create (e.g., 100)")
-    parser.add_argument("-s", "--size", type=str, help="Size of each file (e.g., 1KB, 1MB, 1GB)")
-    parser.add_argument("-o", "--output", type=str, help="Output directory (e.g., my_files)")
+    parser = argparse.ArgumentParser(description="Generate multiple .txt files with lorem ipsum content.", add_help=False)
+    parser.add_argument("-n", "--num", type=int, help="Number of files to create")
+    parser.add_argument("-s", "--size", type=str, help="Size of each file (e.g., 1KB, 1MB)")
+    parser.add_argument("-o", "--output", type=str, help="Output directory")
 
-    # Manually check for help argument
     if "-h" in sys.argv or "--help" in sys.argv:
         print_help()
 
     args = parser.parse_args()
 
     try:
-        # Handle missing arguments with user input
         if args.num is None:
             args.num = int(input("Enter the number of files to create: "))
-
         if args.size is None:
-            args.size = input("Enter the file size (e.g., 1KB, 1MB, 1GB): ")
-
+            args.size = input("Enter the file size (e.g., 1KB, 1MB): ")
         if args.output is None:
             args.output = input("Enter the output directory name: ")
 
-        file_size_bytes = parse_size(args.size)  # Convert size input to bytes
+        file_size_bytes = parse_size(args.size)
+        validate_inputs(args.num, file_size_bytes)
         create_files(args.num, file_size_bytes, args.output)
 
     except KeyboardInterrupt:
         print("\nOperation cancelled by user. Exiting.")
-        sys.exit(0)  # Exit without error
-
+        sys.exit(0)
     except ValueError as e:
         print(f"Error: {e}")
-        sys.exit(1)  # Exit with error status
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
