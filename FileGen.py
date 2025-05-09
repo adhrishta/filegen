@@ -1,6 +1,8 @@
 import os
 import argparse
 import sys
+import time
+from tqdm import tqdm
 
 def parse_size(size_str):
     """Convert size input (e.g., 1KB, 2MB, 3GB) to bytes."""
@@ -30,7 +32,10 @@ def create_files(num_files, file_size, output_dir):
     content_bytes = content.encode("utf-8")
     content_len = len(content_bytes)
 
-    for i in range(1, num_files + 1):
+    print(f"Creating {num_files} files of {file_size} bytes each in '{output_dir}'...\n")
+    start_time = time.time()
+
+    for i in tqdm(range(1, num_files + 1), desc="Progress", unit="file"):
         file_path = os.path.join(output_dir, f"file_{i}.txt")
         with open(file_path, "wb") as f:
             written = 0
@@ -39,7 +44,9 @@ def create_files(num_files, file_size, output_dir):
                 written += content_len
             if written < file_size:
                 f.write(content_bytes[:file_size - written])
-        print(f"Created: {file_path} ({file_size} bytes)")
+
+    elapsed = time.time() - start_time
+    print(f"\n✅ Done! {num_files} files created in {elapsed:.2f} seconds.")
 
 def print_help():
     help_text = """
